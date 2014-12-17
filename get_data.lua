@@ -37,5 +37,7 @@ An average of %.2f characters per comment. %i characters total.
 %.3f characters per second. %.3f words per second at 5 characters per word.]],
 #dataset, seconds, #dataset/seconds, average, total, total/seconds, total/seconds/5))
 
-
+--[[14969 comments harvested in 2918 seconds. Or 5.130 comments per second.
+An average of 162.85 characters per comment. 2437715 characters total.
+835.406 characters per second. 167.081 words per second at 5 characters per word.]]
 
