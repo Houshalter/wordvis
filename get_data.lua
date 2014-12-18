@@ -5,6 +5,7 @@ http.USERAGENT = "wordvis comment scraper by /u/Noncomment"
 local dataset = {}
 local seen = {}
 local nextId = ""
+local oldcomments = 0
 
 start = os.time()
 
@@ -19,10 +20,12 @@ for i = 1, 1000 do
 		end
 		if not done then nextId = "&after="..tostring(children[100].data.name)
 		else nextId = "" end
-	end
-	print(nextId)
-	print("\n\n\n", dataset[#dataset])
-	os.execute("sleep 10")
+		print(string.format("scraped %i new comments", #dataset-oldcomments))
+		oldcomments = #dataset
+	else print("error status "..sts) end 
+	print("\n\n\n"..dataset[#dataset])
+	socket.sleep(10)
+	print("\n"..((nextId:len()>0) and "Going to next page." or "Loading first page."))
 end
 
 seconds = os.difftime(os.time(), start)
