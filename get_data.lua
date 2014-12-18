@@ -19,31 +19,36 @@ function scrapeComments(numComments)
 			end
 			if not done then nextId = "&after="..tostring(children[100].data.name)
 			else nextId = "" end
+			if (#dataset-oldcomments == 100 and done) then error("Not possible to have 100 new unique comments and set off the detector for non unique comment found.", #children) end
 			print(string.format("scraped %i new comments", #dataset-oldcomments))
 			oldcomments = #dataset
 		else print("error status "..sts) end 
 		print("\n\n\n"..dataset[#dataset])
 		if #dataset >= numComments then break end
 		socket.sleep(done and 10 or 2)
-		print("\n"..(done and "Going to next page." or "Loading first page."))
+		print("\n"..(done and "Loading first page." or "Going to next page."))
 	end
 	return dataset
 end
 
-start = os.time()
-local dataset = scrapeComments(1000)
+local function test(n)
+	start = os.time()
+	local dataset = scrapeComments(n)
 
-seconds = os.difftime(os.time(), start)
-total = 0
-for k, v in ipairs(dataset) do
-	total = total + v:len()
+	seconds = os.difftime(os.time(), start)
+	total = 0
+	for k, v in ipairs(dataset) do
+		total = total + v:len()
+	end
+	average = total/#dataset
+
+	print(string.format([[%i comments harvested in %i seconds. Or %.3f comments per second.
+	An average of %.2f characters per comment. %i characters total.
+	%.3f characters per second. %.3f words per second at 5 characters per word.]],
+	#dataset, seconds, #dataset/seconds, average, total, total/seconds, total/seconds/5))
 end
-average = total/#dataset
 
-print(string.format([[%i comments harvested in %i seconds. Or %.3f comments per second.
-An average of %.2f characters per comment. %i characters total.
-%.3f characters per second. %.3f words per second at 5 characters per word.]],
-#dataset, seconds, #dataset/seconds, average, total, total/seconds, total/seconds/5))
+test(5000)
 
 --[[14969 comments harvested in 2918 seconds. Or 5.130 comments per second.
 An average of 162.85 characters per comment. 2437715 characters total.
