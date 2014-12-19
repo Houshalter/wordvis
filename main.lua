@@ -14,6 +14,9 @@ dofile "get_data.lua"
 
 --l = L.locale(l)
 dims = 3
+windowSize = 11
+hiddenSize = 50
+emptyVec = torch.Tensor(3):zeros()
 
 function seperateWords(str)
 	local rawElements = {}
@@ -35,27 +38,47 @@ function seperateWords(str)
 	b = a*b]]
 end
 
-function getWordVec(words)
-	local wordsVec = torch.Tensor(#words, dims)
+function getWordsVec(words)
+	local wordsVec = torch.Tensor(#words+(windowSize-1), dims)
+	--need to test this
+	wordsVec[{1, windowSize-1}] = emptyVec
 	for wordNum, word in ipairs(words) do
 		if wordVecs[word] then
 			wordVecs[word].seen = wordVecs[word].seen + 1
 		else
 			wordVecs[word] = {seen = 1,vec=getRandomVec()}
 		end
-		local wordsVec[wordNum] = wordVecs[word].vec
+		local wordsVec[wordNum+(windowSize-1)/2] = wordVecs[word].vec
 	end
 	return wordsVec
 end
 
 function getRandomVec()
-	torch.rand(dims)
+	return torch.rand(dims)
 end
 
 comments = scrapeComments(1900)
 
 for commentNum, comment in ipairs(comments) do
-	words = seperateWords(comment)
-	wordVec = getWordVec(words)
+	words = seperateWords(comment) --end
+	wordsVec = getWordVec(words)
 end
+
+wordPredictNet = nn.Sequential() --stuff
+criterion = MSECriterion()
+
+local input = torch.Tensor(windowSize)
+for i = 1, size do
+	input[{{1,(windowSize-1)/2}}] = wordsVec[{{i,i+(windowSize-1)/2}}]
+	input[{{(windowSize-1)/2+1}, windowSize-1}] = wordsVec[{{i+(windowSize-1)/2+2,windowSize}}]
+	local out = wordPredictNet:forward(wordsVec({{i, i+windowSize}}))
+	--get gradients and such
+end
+
+--wordPredictNet = nn.TemporalConvolution(dims, hiddenSize, windowSize)
+
+--output = forward(wordPredictNet, wordsVec)
+--output:apply(function(a
+
+
 
