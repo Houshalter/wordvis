@@ -1,6 +1,7 @@
 http = require "socket.http"
 cjson = require "cjson"
 http.USERAGENT = "wordvis comment scraper by /u/Noncomment"
+local bots = {}
 
 function scrapeComments(numComments)
 	local dataset = {}
@@ -8,16 +9,26 @@ function scrapeComments(numComments)
 	local nextId = ""
 	local oldcomments, done = 0, false
 	while true do
-		local res, sts = http.request("http://www.reddit.com/comments.json?limit=100"..nextId)
+		local res, sts = http.request("http://www.reddit.com/r/all/comments.json?limit=100"..nextId)
 		if sts == 200 then
 			local children = cjson.decode(res).data.children
 			done = false
 			for k, v in ipairs(children) do
 				if not seen[v.data.id] then seen[v.data.id] = true
 				else done = true break end
-				table.insert(dataset, v.data.body)
+				if v.data.author ~= "AutoModerator" then
+					if not v.data.author:lower():find("bot") then
+						table.insert(dataset, v.data.body)
+					else
+						if not bots[v.data.author] then
+							print("Bot found: "..v.data.author)
+							bots[v.data.author] = true
+						end
+					end
+				end
 			end
-			if not done then nextId = "&after="..tostring(children[100].data.name)
+			if not (#children == 100) then done = true end
+			if not done then nextId = "&after="..tostring(children[#children].data.name)
 			else nextId = "" end
 			if (#dataset-oldcomments == 100 and done) then error("Not possible to have 100 new unique comments and set off the detector for non unique comment found.", #children) end
 			print(string.format("scraped %i new comments", #dataset-oldcomments))
@@ -42,13 +53,13 @@ local function test(n)
 	end
 	average = total/#dataset
 
-	print(string.format([[%i comments harvested in %i seconds. Or %.3f comments per second.
-	An average of %.2f characters per comment. %i characters total.
-	%.3f characters per second. %.3f words per second at 5 characters per word.]],
+	print(string.format([[%i comments harvested in %i seconds. Or %.3f comments per second.\nAn average of %.2f characters per comment. %i characters total.\n%.3f characters per second. %.3f words per second at 5 characters per word.]],
 	#dataset, seconds, #dataset/seconds, average, total, total/seconds, total/seconds/5))
+	print("\nBots Found:")
+	table.foreach(bots, function(a) print(a) end)
 end
 
-test(5000)
+--test(500)
 
 --[[14969 comments harvested in 2918 seconds. Or 5.130 comments per second.
 An average of 162.85 characters per comment. 2437715 characters total.

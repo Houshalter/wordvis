@@ -9,6 +9,7 @@
 --get the associated word vector for every word and build a table of these for each sentence
 --if the word is new, assign it a random vector
 --and high step size and few online updates
+l = require 'lpeg'
 dofile "get_data.lua"
 
 function seperateWords(str)
