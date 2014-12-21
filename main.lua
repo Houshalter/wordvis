@@ -15,6 +15,7 @@ dofile "get_data.lua"
 --l = L.locale(l)
 dims = 3
 windowSize = 11
+padding = (windowSize-1)/2
 hiddenSize = 50
 emptyVec = torch.Tensor(3):zeros()
 
@@ -41,14 +42,15 @@ end
 function getWordsVec(words)
 	local wordsVec = torch.Tensor(#words+(windowSize-1), dims)
 	--need to test this
-	wordsVec[{1, windowSize-1}] = emptyVec
+	wordsVec[{{1, padding}}] = emptyVec
+	wordsVec[{{#words+padding, windowSize-1+#words}}] = emptyVec
 	for wordNum, word in ipairs(words) do
 		if wordVecs[word] then
 			wordVecs[word].seen = wordVecs[word].seen + 1
 		else
 			wordVecs[word] = {seen = 1,vec=getRandomVec()}
 		end
-		local wordsVec[wordNum+(windowSize-1)/2] = wordVecs[word].vec
+		local wordsVec[wordNum+padding] = wordVecs[word].vec
 	end
 	return wordsVec
 end
@@ -67,12 +69,20 @@ end
 wordPredictNet = nn.Sequential() --stuff
 criterion = MSECriterion()
 
-local input = torch.Tensor(windowSize)
+local input = torch.Tensor(windowSize-1)
 for i = 1, size do
-	input[{{1,(windowSize-1)/2}}] = wordsVec[{{i,i+(windowSize-1)/2}}]
-	input[{{(windowSize-1)/2+1}, windowSize-1}] = wordsVec[{{i+(windowSize-1)/2+2,windowSize}}]
-	local out = wordPredictNet:forward(wordsVec({{i, i+windowSize}}))
-	--get gradients and such
+	local goal = wordsVec[{{i+padding}}]
+	input[{{1,padding}}] = wordsVec[{{i,i+padding}}]
+	input[{{padding+1, windowSize-1}}] = wordsVec[{{i+padding+2,windowSize}}]
+	local out = wordPredictNet:forward(input)
+	local err = criterion:forward(out, goal)
+	local gradErr = criterion:backward(out, goal)
+	wordPredictNet:backward(out, gradErr)
+	wordPredictNet.gradInput
+	--do something with grad err here
+	local errWord = criterion:forward(goal, out)
+	local gradErrWord = criterion:backward(goal, out)
+	wordVecs.Grad:add(words[i+padding])
 end
 
 --wordPredictNet = nn.TemporalConvolution(dims, hiddenSize, windowSize)
